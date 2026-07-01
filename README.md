@@ -1,30 +1,47 @@
-# SSDD-AlbumFotos
-
-## Consigna
-
 ### Álbum de Fotos Compartido Temporal
 
-Desarrollar una aplicación para crear álbumes de fotos colaborativos orientados a eventos, donde múltiples personas pueden contribuir con sus fotografías sin necesidad de registrarse.
+Aplicación web diseñada para crear álbumes de fotos colaborativos orientados a eventos. Permite que múltiples usuarios contribuyan con sus fotografías de forma rápida, sin necesidad de registro previo.
 
 ### Funcionalidades
 
-Formulario para crear un álbum donde se ingrese: nombre del álbum, descripción breve, fecha del evento y opcionalmente una contraseña de acceso. Al crear el álbum, generar un enlace único para compartir.
-Cualquier persona con el enlace puede acceder al álbum; si tiene contraseña, solicitarla antes de mostrar el contenido
-Permitir subir fotos con las siguientes restricciones:
+* **Creación de álbumes:** Formulario para nombre, descripción, fecha del evento y contraseña opcional. Generación de enlace único para compartir.
+* **Acceso seguro:** Acceso público mediante enlace, con validación de contraseña en caso de ser requerida.
+* **Gestión de imágenes:** Subida de fotos (JPG, PNG, WebP) con límite de 10 MB por archivo.
+* **Galería:** Visualización responsive en formato grid, con vista detallada (lightbox) de cada imagen.
+* **Estadísticas:** Contador de fotos subidas y espacio total consumido (en MB).
+* **Descarga colaborativa:** Funcionalidad para descargar todas las fotos del álbum comprimidas en un archivo ZIP.
+* **Expiración automática:** Eliminación integral (fotos y metadatos) 30 días después de la fecha del evento.
 
-- Formatos aceptados: JPG, PNG, WebP
-- Tamaño máximo por imagen: 10 MB
-  Mostrar todas las fotos del álbum en una galería con diseño en grid responsive
-  Mostrar un contador con: cantidad total de fotos y espacio total utilizado (en MB)
-  Permitir descargar todas las fotos del álbum comprimidas en un único archivo ZIP
-  Implementar expiración automática: los álbumes deben eliminarse (fotos y metadatos) 30 días después de la fecha del evento registrada
+## Resolución Técnica
 
-## Resolución
+### Base de Datos y Entorno
 
-La base de datos utilizada fue MongoDB, usando Mongoose como ODM. Se interactua con la base de datos a través de 3 modelos: Album, Image y Photo.
+* **Tecnología:** Se utiliza **MongoDB** como base de datos NoSQL, gestionada mediante el ODM **Mongoose**.
+* **Infraestructura:** Para el entorno de desarrollo y gestión de la base de datos, se ha implementado **Docker** a través de `docker-compose.yml`, garantizando un entorno aislado y persistente para el motor de base de datos.
+* **Modelado:** Se estructuró la información en 3 modelos principales para optimizar el rendimiento:
+* `Album`: Metadatos del evento y configuración.
+* `Photo`: Referencias y metadatos de las imágenes.
+* `Image`: Datos binarios (Buffers) de la imagen y su respectivo thumbnail.
 
-La distinción entre foto e imagén se basa en un tema optimización, ya que no queremos enviar todas las imagenes de un album al cargar la página, ya que seria una respuesta enorme e ineficiente. Por lo que se decidió guardar los datos binarios en Image, y los metadatos y el id del documento Image que guarda la imagen.
 
-Se aplicó una galería con grid responsive mostrando thumbnails, y una vista de la imagen completa al clickear alguna donde se ve la imagen en una mejor resolución. Una vez creado la estructura siguiendo buenas prácticas a la hora de desarrollar una aplicación con Next.js, fue sencillo desarrollar la funcionalidad del archivo comprimido de las fotos del album.
 
-Al ser una base de datos NoSQL, se tiene que tener extremo cuidado a la hora de eliminar los albumes ya que no hay delete on cascade automatico, se tiene que ir de menor a mayor, loopeando cada Photo para eliminar su correspondiente Image, para luego hacer llamar DeleteMany en este modelo, y DeleteOne en el album.
+> **Optimización:** La separación de `Image` permite cargar la galería sin transferir el peso total de los archivos binarios, evitando respuestas ineficientes del servidor.
+
+### Desafíos NoSQL
+
+Al trabajar con un modelo NoSQL, la integridad referencial no es nativa. Para garantizar la limpieza total al expirar un álbum, se implementó una **lógica de eliminación en cascada** a nivel de aplicación:
+
+1. Recorrido de los documentos asociados en la colección `Photo`.
+2. Eliminación de los archivos binarios correspondientes en `Image`.
+3. Limpieza final del documento raíz en la colección `Album`.
+
+---
+
+### Cómo levantar el proyecto
+
+Para ejecutar el entorno de base de datos de manera sencilla, se incluye un script de automatización:
+
+1. **Levantar base de datos:** `./up.sh` (o `sudo docker compose up -d`)
+2. **Instalar dependencias:** `pnpm install`
+3. **Ejecutar aplicación:** `pnpm dev`
+4. **Visualización de datos:** Se puede utilizar **MongoDB Compass** conectándose a `mongodb://localhost:27017` para inspeccionar las colecciones en tiempo real.
